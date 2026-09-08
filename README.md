@@ -136,35 +136,6 @@ composer test
 
 ---
 
-## Langkah Publish ke Packagist
-
-1. **Inisialisasi Git repository lokal:**
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial release of SippEnkripsi"
-   ```
-2. **Ubah `name` di `composer.json`** menjadi vendor GitHub Anda, misalnya:
-   `"name": "username-anda/sippenkripsi"`
-3. **Push ke GitHub:**
-   ```bash
-   git remote add origin https://github.com/username-anda/sippenkripsi.git
-   git branch -M main
-   git push -u origin main
-   ```
-4. **Buat Release Tag:**
-   ```bash
-   git tag -a v1.0.0 -m "Release v1.0.0"
-   git push origin v1.0.0
-   ```
-5. **Submit ke Packagist:**
-   - Masuk ke [packagist.org](https://packagist.org/) dengan akun GitHub Anda.
-   - Klik menu **Submit**.
-   - Masukkan URL repository GitHub Anda, lalu klik **Check** dan **Submit**.
-   - Aktifkan GitHub Webhook di Packagist agar setiap tag baru otomatis ter-update.
-
----
-
 ## Lisensi
 
 [MIT License](LICENSE) &copy; 2026 SippEnkripsi Contributors.
