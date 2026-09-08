@@ -136,6 +136,110 @@ composer test
 
 ---
 
+## Self-Host REST API dengan Docker (FrankenPHP)
+
+Selain digunakan sebagai library PHP, project ini juga dapat di-deploy sebagai **REST API Microservice** yang cepat dan ringan menggunakan **Docker Compose & FrankenPHP (PHP 8.3)**.
+
+Ini sangat berguna jika aplikasi Anda ditulis menggunakan bahasa lain (Python, Node.js, Go, Rust, C#, Java, dll) namun perlu melakukan enkripsi / dekripsi `perkara_id` yang kompatibel dengan SIPP.
+
+### 1. Menjalankan Server
+
+1. Salin file environment:
+   ```bash
+   cp .env.example .env
+   ```
+2. Sesuaikan konfigurasi di `.env`:
+   ```env
+   PORT=8080
+   SIPP_ENCRYPTION_KEY=kunci_rahasia_sipp_anda
+   API_KEY=opsional_token_rahasia
+   ```
+3. Jalankan container dengan Docker Compose:
+   ```bash
+   docker compose up -d
+   ```
+   API akan berjalan di `http://localhost:8080`.
+
+---
+
+### 2. Dokumentasi Endpoint REST API
+
+#### A. Health Check
+- **Endpoint**: `GET /health`
+- **Contoh Request**:
+  ```bash
+  curl http://localhost:8080/health
+  ```
+- **Response**:
+  ```json
+  {
+    "status": "ok",
+    "service": "SippEnkripsi REST API",
+    "version": "1.0.0",
+    "php_version": "8.3.x",
+    "has_default_key": true,
+    "timestamp": 1788855546
+  }
+  ```
+
+#### B. Enkripsi (Encrypt)
+- **Endpoint**: `POST /encrypt`
+- **Headers**:
+  - `Content-Type: application/json`
+  - `X-API-Key: <token>` *(Wajib jika `API_KEY` diisi di .env)*
+- **Body JSON**:
+  ```json
+  {
+    "data": "12345",
+    "url_safe": false,
+    "key": "opsional_custom_key"
+  }
+  ```
+- **Contoh Request (cURL)**:
+  ```bash
+  curl -X POST http://localhost:8080/encrypt \
+    -H "Content-Type: application/json" \
+    -d '{"data": "12345"}'
+  ```
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "result": "5qN8E4QrhkEoL7T2cbpmzG1Fj/X7aV4S6V2FwxZc5+JbKZ6yEtBEjbNFbKBYBfr/eypAAOG/+dQHnc9wABeVMQ==",
+    "url_safe": false
+  }
+  ```
+
+#### C. Dekripsi (Decrypt)
+- **Endpoint**: `POST /decrypt`
+- **Headers**:
+  - `Content-Type: application/json`
+  - `X-API-Key: <token>` *(Wajib jika `API_KEY` diisi di .env)*
+- **Body JSON**:
+  ```json
+  {
+    "data": "5qN8E4QrhkEoL7T2cbpmzG1Fj/X7aV4S6V2FwxZc5+JbKZ6yEtBEjbNFbKBYBfr/eypAAOG/+dQHnc9wABeVMQ==",
+    "url_safe": false,
+    "key": "opsional_custom_key"
+  }
+  ```
+- **Contoh Request (cURL)**:
+  ```bash
+  curl -X POST http://localhost:8080/decrypt \
+    -H "Content-Type: application/json" \
+    -d '{"data": "5qN8E4QrhkEoL7T2cbpmzG1Fj/X7aV4S6V2FwxZc5+JbKZ6yEtBEjbNFbKBYBfr/eypAAOG/+dQHnc9wABeVMQ=="}'
+  ```
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "result": "12345",
+    "url_safe": false
+  }
+  ```
+
+---
+
 ## Lisensi
 
 [MIT License](LICENSE) &copy; 2026 SippEnkripsi Contributors.

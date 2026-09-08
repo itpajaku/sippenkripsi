@@ -1,0 +1,23 @@
+services:
+  sippenkripsi-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: itpajaku/sippenkripsi:latest
+    container_name: sippenkripsi-api
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8080}:80"
+    environment:
+      - SERVER_NAME=:80
+      - SIPP_ENCRYPTION_KEY=${SIPP_ENCRYPTION_KEY:-}
+      - API_KEY=${API_KEY:-}
+    env_file:
+      - path: .env
+        required: false
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
