@@ -154,4 +154,21 @@ class SippEnkripsiTest extends TestCase
 
         $this->assertEquals('778899', $decoded);
     }
+
+    public function testBase64WrappedEncodingAndDecoding(): void
+    {
+        $enc = new SippEnkripsi($this->defaultKey);
+        $perkaraId = '35512';
+
+        $wrapped = $enc->encodeBase64Wrapped($perkaraId);
+        $this->assertNotEmpty($wrapped);
+
+        // It must decode back to the same ID
+        $decoded = $enc->decodeBase64Wrapped($wrapped);
+        $this->assertEquals($perkaraId, $decoded);
+
+        // Test alias
+        $aliasWrapped = $enc->encodeBase64($perkaraId);
+        $this->assertEquals($perkaraId, $enc->decodeBase64($aliasWrapped));
+    }
 }

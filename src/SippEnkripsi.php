@@ -207,6 +207,59 @@ class SippEnkripsi
     }
 
     /**
+     * Encode and wrap the result with an extra base64_encode()
+     *
+     * @param string|int|float $string
+     * @param string|null $key
+     * @return string
+     */
+    public function encodeBase64Wrapped($string, ?string $key = null): string
+    {
+        return base64_encode($this->encode($string, $key));
+    }
+
+    /**
+     * Alias for encodeBase64Wrapped()
+     *
+     * @param string|int|float $string
+     * @param string|null $key
+     * @return string
+     */
+    public function encodeBase64($string, ?string $key = null): string
+    {
+        return $this->encodeBase64Wrapped($string, $key);
+    }
+
+    /**
+     * Decode a string that was wrapped with base64_encode()
+     *
+     * @param string $string
+     * @param string|null $key
+     * @return string|false
+     */
+    public function decodeBase64Wrapped(string $string, ?string $key = null)
+    {
+        $unwrapped = base64_decode($string, true);
+        if ($unwrapped === false) {
+            return false;
+        }
+
+        return $this->decode($unwrapped, $key);
+    }
+
+    /**
+     * Alias for decodeBase64Wrapped()
+     *
+     * @param string $string
+     * @param string|null $key
+     * @return string|false
+     */
+    public function decodeBase64(string $string, ?string $key = null)
+    {
+        return $this->decodeBase64Wrapped($string, $key);
+    }
+
+    /**
      * Encrypt using phpseclib Rijndael (compatible with mcrypt MCRYPT_RIJNDAEL_256)
      *
      * @param string $data
@@ -271,17 +324,21 @@ class SippEnkripsi
         $initVect = substr($data, 0, $initSize);
         $data = substr($data, $initSize);
 
-        $cipher = new Rijndael($this->getCipherMode());
-        $cipher->setBlockLength($this->cipherBlockSize);
-        $cipher->setKeyLength($this->cipherKeySize);
-        $cipher->setKey($key);
-        $cipher->setIV($initVect);
-        $cipher->disablePadding();
+        try {
+            $cipher = new Rijndael($this->getCipherMode());
+            $cipher->setBlockLength($this->cipherBlockSize);
+            $cipher->setKeyLength($this->cipherKeySize);
+            $cipher->setKey($key);
+            $cipher->setIV($initVect);
+            $cipher->disablePadding();
 
-        $decrypted = $cipher->decrypt($data);
+            $decrypted = $cipher->decrypt($data);
 
-        // Strip null-byte padding (mcrypt uses zero-padding)
-        return rtrim($decrypted, "\0");
+            // Strip null-byte padding (mcrypt uses zero-padding)
+            return rtrim($decrypted, "\0");
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     /**

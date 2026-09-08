@@ -56,19 +56,29 @@ $requestUri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $defaultKey = getenv('SIPP_ENCRYPTION_KEY') ?: ($_ENV['SIPP_ENCRYPTION_KEY'] ?? null);
 
-// Routes
+// Routes: Health Check
 if ($requestMethod === 'GET' && in_array($requestUri, ['/', '/health', '/api/health'], true)) {
     sendResponse(200, [
         'status' => 'ok',
         'service' => 'SippEnkripsi REST API',
-        'version' => '1.0.0',
+        'version' => '1.1.0',
         'php_version' => PHP_VERSION,
         'has_default_key' => !empty($defaultKey),
+        'endpoints' => [
+            'POST /encrypt' => 'Standard SIPP base64 encryption',
+            'POST /encrypt/base64' => 'SIPP encryption wrapped with base64_encode()',
+            'POST /decrypt' => 'Standard SIPP decryption',
+            'POST /decrypt/base64' => 'Decryption of base64-wrapped ciphertext'
+        ],
         'timestamp' => time()
     ]);
 }
 
-if ($requestMethod === 'POST' && in_array($requestUri, ['/encrypt', '/api/encrypt'], true)) {
+// Routes: Encrypt (Standard or Base64-Wrapped)
+$isEncryptBase64Route = in_array($requestUri, ['/encrypt/base64', '/api/encrypt/base64'], true);
+$isEncryptRoute = $isEncryptBase64Route || in_array($requestUri, ['/encrypt', '/api/encrypt'], true);
+
+if ($requestMethod === 'POST' && $isEncryptRoute) {
     $rawInput = file_get_contents('php://input');
     $input = json_decode($rawInput, true);
 
@@ -82,6 +92,7 @@ if ($requestMethod === 'POST' && in_array($requestUri, ['/encrypt', '/api/encryp
     $data = (string) $input['data'];
     $key = !empty($input['key']) ? (string) $input['key'] : $defaultKey;
     $isUrlSafe = !empty($input['url_safe']);
+    $wrapBase64 = $isEncryptBase64Route || !empty($input['wrap_base64']) || !empty($input['base64']);
 
     if (empty($key)) {
         sendResponse(400, [
@@ -92,11 +103,13 @@ if ($requestMethod === 'POST' && in_array($requestUri, ['/encrypt', '/api/encryp
 
     try {
         $sipp = new SippEnkripsi($key);
-        $result = $isUrlSafe ? $sipp->encodeUrlSafe($data) : $sipp->encode($data);
+        $encrypted = $isUrlSafe ? $sipp->encodeUrlSafe($data) : $sipp->encode($data);
+        $result = $wrapBase64 ? base64_encode($encrypted) : $encrypted;
 
         sendResponse(200, [
             'success' => true,
             'result' => $result,
+            'wrapped_base64' => $wrapBase64,
             'url_safe' => $isUrlSafe
         ]);
     } catch (\Throwable $e) {
@@ -107,7 +120,11 @@ if ($requestMethod === 'POST' && in_array($requestUri, ['/encrypt', '/api/encryp
     }
 }
 
-if ($requestMethod === 'POST' && in_array($requestUri, ['/decrypt', '/api/decrypt'], true)) {
+// Routes: Decrypt (Standard or Base64-Wrapped)
+$isDecryptBase64Route = in_array($requestUri, ['/decrypt/base64', '/api/decrypt/base64'], true);
+$isDecryptRoute = $isDecryptBase64Route || in_array($requestUri, ['/decrypt', '/api/decrypt'], true);
+
+if ($requestMethod === 'POST' && $isDecryptRoute) {
     $rawInput = file_get_contents('php://input');
     $input = json_decode($rawInput, true);
 
@@ -121,6 +138,7 @@ if ($requestMethod === 'POST' && in_array($requestUri, ['/decrypt', '/api/decryp
     $data = (string) $input['data'];
     $key = !empty($input['key']) ? (string) $input['key'] : $defaultKey;
     $isUrlSafe = !empty($input['url_safe']);
+    $unwrapBase64 = $isDecryptBase64Route || !empty($input['wrap_base64']) || !empty($input['base64']);
 
     if (empty($key)) {
         sendResponse(400, [
@@ -131,7 +149,29 @@ if ($requestMethod === 'POST' && in_array($requestUri, ['/decrypt', '/api/decryp
 
     try {
         $sipp = new SippEnkripsi($key);
-        $result = $isUrlSafe ? $sipp->decodeUrlSafe($data) : $sipp->decode($data);
+        $result = false;
+
+        if ($unwrapBase64) {
+            // Unwrapping requested explicitly
+            $decodedOuter = base64_decode($data, true);
+            if ($decodedOuter !== false) {
+                $result = $isUrlSafe ? $sipp->decodeUrlSafe($decodedOuter) : $sipp->decode($decodedOuter);
+            }
+        } else {
+            // Standard decode first
+            $result = $isUrlSafe ? $sipp->decodeUrlSafe($data) : $sipp->decode($data);
+
+            // If standard decode failed, gracefully try unwrapping outer base64
+            if ($result === false) {
+                $decodedOuter = base64_decode($data, true);
+                if ($decodedOuter !== false && $decodedOuter !== $data) {
+                    $result = $isUrlSafe ? $sipp->decodeUrlSafe($decodedOuter) : $sipp->decode($decodedOuter);
+                    if ($result !== false) {
+                        $unwrapBase64 = true;
+                    }
+                }
+            }
+        }
 
         if ($result === false) {
             sendResponse(422, [
@@ -143,6 +183,7 @@ if ($requestMethod === 'POST' && in_array($requestUri, ['/decrypt', '/api/decryp
         sendResponse(200, [
             'success' => true,
             'result' => $result,
+            'wrapped_base64' => $unwrapBase64,
             'url_safe' => $isUrlSafe
         ]);
     } catch (\Throwable $e) {
@@ -156,5 +197,5 @@ if ($requestMethod === 'POST' && in_array($requestUri, ['/decrypt', '/api/decryp
 // 404 Not Found
 sendResponse(404, [
     'success' => false,
-    'error' => 'Endpoint not found. Available endpoints: GET /health, POST /encrypt, POST /decrypt'
+    'error' => 'Endpoint not found. Available endpoints: GET /health, POST /encrypt, POST /encrypt/base64, POST /decrypt, POST /decrypt/base64'
 ]);

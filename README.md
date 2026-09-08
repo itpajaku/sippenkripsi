@@ -183,7 +183,8 @@ Ini sangat berguna jika aplikasi Anda ditulis menggunakan bahasa lain (Python, N
   ```
 
 #### B. Enkripsi (Encrypt)
-- **Endpoint**: `POST /encrypt`
+- **Endpoint Standar**: `POST /encrypt`
+- **Endpoint Dibungkus Base64**: `POST /encrypt/base64` *(atau sertakan `"wrap_base64": true` pada body)*
 - **Headers**:
   - `Content-Type: application/json`
   - `X-API-Key: <token>` *(Wajib jika `API_KEY` diisi di .env)*
@@ -192,48 +193,52 @@ Ini sangat berguna jika aplikasi Anda ditulis menggunakan bahasa lain (Python, N
   {
     "data": "12345",
     "url_safe": false,
+    "wrap_base64": false,
     "key": "opsional_custom_key"
   }
   ```
-- **Contoh Request (cURL)**:
+- **Contoh Request Enkripsi Dibungkus Base64 (cURL)**:
   ```bash
-  curl -X POST http://localhost:8080/encrypt \
+  curl -X POST http://localhost:8080/encrypt/base64 \
     -H "Content-Type: application/json" \
-    -d '{"data": "12345"}'
+    -d '{"data": "35512"}'
   ```
 - **Response**:
   ```json
   {
     "success": true,
-    "result": "5qN8E4QrhkEoL7T2cbpmzG1Fj/X7aV4S6V2FwxZc5+JbKZ6yEtBEjbNFbKBYBfr/eypAAOG/+dQHnc9wABeVMQ==",
+    "result": "dnZCWlgyd3diZUJpaXE5MjVvWU9OZkNJRGo5dFkza0JLZTYzSDBSODV1OVN5eTI0VnJXMm5LL0VPK1AzVVl1WUpHN3h2NHQreXhld3N6djdvWDVIWFE9PQ==",
+    "wrapped_base64": true,
     "url_safe": false
   }
   ```
 
 #### C. Dekripsi (Decrypt)
-- **Endpoint**: `POST /decrypt`
+- **Endpoint Standar / Auto-Unwrap**: `POST /decrypt`
+- **Endpoint Khusus Base64-Wrapped**: `POST /decrypt/base64`
 - **Headers**:
   - `Content-Type: application/json`
   - `X-API-Key: <token>` *(Wajib jika `API_KEY` diisi di .env)*
 - **Body JSON**:
   ```json
   {
-    "data": "5qN8E4QrhkEoL7T2cbpmzG1Fj/X7aV4S6V2FwxZc5+JbKZ6yEtBEjbNFbKBYBfr/eypAAOG/+dQHnc9wABeVMQ==",
+    "data": "dnZCWlgyd3diZUJpaXE5MjVvWU9OZkNJRGo5dFkza0JLZTYzSDBSODV1OVN5eTI0VnJXMm5LL0VPK1AzVVl1WUpHN3h2NHQreXhld3N6djdvWDVIWFE9PQ==",
     "url_safe": false,
     "key": "opsional_custom_key"
   }
   ```
 - **Contoh Request (cURL)**:
   ```bash
-  curl -X POST http://localhost:8080/decrypt \
+  curl -X POST http://localhost:8080/decrypt/base64 \
     -H "Content-Type: application/json" \
-    -d '{"data": "5qN8E4QrhkEoL7T2cbpmzG1Fj/X7aV4S6V2FwxZc5+JbKZ6yEtBEjbNFbKBYBfr/eypAAOG/+dQHnc9wABeVMQ=="}'
+    -d '{"data": "dnZCWlgyd3diZUJpaXE5MjVvWU9OZkNJRGo5dFkza0JLZTYzSDBSODV1OVN5eTI0VnJXMm5LL0VPK1AzVVl1WUpHN3h2NHQreXhld3N6djdvWDVIWFE9PQ=="}'
   ```
 - **Response**:
   ```json
   {
     "success": true,
-    "result": "12345",
+    "result": "35512",
+    "wrapped_base64": true,
     "url_safe": false
   }
   ```
