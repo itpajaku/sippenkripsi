@@ -1,0 +1,44 @@
+{
+    "name": "itpajaku/sippenkripsi",
+    "description": "Library PHP standalone untuk enkripsi dan dekripsi perkara_id SIPP (Sistem Informasi Penelusuran Perkara) kompatibel dengan CodeIgniter 2 / PHP 5 mcrypt.",
+    "keywords": [
+        "sipp",
+        "mahkamah-agung",
+        "perkara-id",
+        "enkripsi",
+        "encryption",
+        "codeigniter",
+        "mcrypt",
+        "phpseclib",
+        "rijndael-256"
+    ],
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "itpajaku"
+        }
+    ],
+    "require": {
+        "php": ">=7.4 || >=8.0",
+        "phpseclib/phpseclib": "^3.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5 || ^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "SippEnkripsi\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "SippEnkripsi\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
